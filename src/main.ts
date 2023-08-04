@@ -10,7 +10,7 @@ const resolutionFactor = (viewPortWidth - 20) / canvasWidth
 canvas.width *= resolutionFactor
 canvas.height *= resolutionFactor
 const canvas2DContext = canvas.getContext('2d')!
-canvas2DContext.fillStyle = 'white'
+canvas2DContext.fillStyle = 'lightgray'
 canvas2DContext.fillRect(0, 0, canvas.width, canvas.height)
 
 class Point {
@@ -18,17 +18,23 @@ class Point {
 }
 
 const codingGameLandscapeGamePoints = [
-  { x: 0, y: 100 },
-  { x: 1000, y: 500 },
-  { x: 1500, y: 100 },
-  { x: 3000, y: 100 },
-  { x: 3500, y: 500 },
-  { x: 4500, y: 700 },
-  { x: 5000, y: 1400 },
-  { x: 5800, y: 300 },
-  { x: 6000, y: 1700 },
-  { x: 6999, y: 900 },
+  { x: 0, y: 1000 },
+  { x: 300, y: 1500 },
+  { x: 350, y: 1400 },
+  { x: 500, y: 2000 },
+  { x: 1500, y: 2700 },
+  { x: 1700, y: 2000 },
+  { x: 3200, y: 1000 },
+  { x: 3500, y: 200 },
+  { x: 5000, y: 200 },
+  { x: 5500, y: 1500 },
+  { x: 5800, y: 1100 },
+  { x: 6000, y: 2200 },
+  { x: 6500, y: 2400 },
+  { x: 6600, y: 2600 },
+  { x: 6999, y: 2500 },
 ]
+
 const landingSiteLeftPointIndex = getLandingSiteLeftPointIndex(
   codingGameLandscapeGamePoints
 )
