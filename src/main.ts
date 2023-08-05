@@ -155,9 +155,7 @@ function drawLandscape(
 function convertLandscapeToConvexLandscapeOnBothSidesOfTheLandingSite(
   landscape: Point[]
 ) {
-  const landingSiteLeftPointIndex = getLandingSiteLeftPointIndex(
-    codingGameLandscapePoints
-  )
+  const landingSiteLeftPointIndex = getLandingSiteLeftPointIndex(landscape)
 
   const landscapeOnTheLeftSideOfTheLandingSite = landscape.slice(
     0,
