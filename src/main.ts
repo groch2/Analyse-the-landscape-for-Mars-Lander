@@ -19,7 +19,7 @@ enum VerticalDirection {
   Down = 'Down',
 }
 
-const codingGameLandscapeGamePoints = [
+const codingGameLandscapePoints = [
   { x: 0, y: 2700 },
   { x: 1000, y: 2600 },
   { x: 1200, y: 2200 },
@@ -50,8 +50,8 @@ const codingGameLandscapeGamePoints = [
   { x: 6999, y: 2200 },
 ]
 
-codingGameLandscapeGamePoints
-  .slice(1, codingGameLandscapeGamePoints.length - 1)
+codingGameLandscapePoints
+  .slice(1, codingGameLandscapePoints.length - 1)
   .forEach(({ x, y }) => {
     x = convertCodingGameLongitudeToCanvasLongitude({
       codingGameLongitude: x,
@@ -69,53 +69,34 @@ codingGameLandscapeGamePoints
     canvas2DContext.stroke()
   })
 
-const landingSiteLeftPointIndex = getLandingSiteLeftPointIndex(
-  codingGameLandscapeGamePoints
-)
-console.log({ landingSiteLeftPointIndex })
 const canvasLandscapePoints = convertCodingGamePointsToCanvasPoints(
-  codingGameLandscapeGamePoints,
+  codingGameLandscapePoints,
   canvasHeight,
   resolutionFactor
 )
 drawLandscape(canvasLandscapePoints, canvas2DContext, 'red')
 
-const landscapeOnTheLeftSideOfTheLandingSite =
-  codingGameLandscapeGamePoints.slice(0, landingSiteLeftPointIndex + 1)
-const convexLandscapeOnTheLeftSideOfTheLandingSite = getConvexLandscape(
-  landscapeOnTheLeftSideOfTheLandingSite,
-  VerticalDirection.Down
-)
+const { convexLandscape, landingSiteLeftPointIndex } =
+  convertLandscapeToConvexLandscapeOnBothSidesOfTheLandingSite(
+    codingGameLandscapePoints
+  )
 drawFromCodingGameLandscape({
-  codingGameLandscapeGamePoints: convexLandscapeOnTheLeftSideOfTheLandingSite,
+  codingGameLandscapeGamePoints: convexLandscape.slice(
+    0,
+    landingSiteLeftPointIndex
+  ),
   canvasHeight,
   resolutionFactor,
   canvas2DContext,
 })
-
-const landscapeOnTheRightSideOfTheLandingSite =
-  codingGameLandscapeGamePoints.slice(landingSiteLeftPointIndex + 1)
-const convexLandscapeOnTheRightSideOfTheLandingSite = getConvexLandscape(
-  landscapeOnTheRightSideOfTheLandingSite,
-  VerticalDirection.Up
-)
 drawFromCodingGameLandscape({
-  codingGameLandscapeGamePoints: convexLandscapeOnTheRightSideOfTheLandingSite,
+  codingGameLandscapeGamePoints: convexLandscape.slice(
+    landingSiteLeftPointIndex
+  ),
   canvasHeight,
   resolutionFactor,
   canvas2DContext,
 })
-
-console.log(
-  convexLandscapeOnTheLeftSideOfTheLandingSite
-    .map(({ x, y }) => `${x},${y}`)
-    .join(`\r\n`)
-)
-console.log(
-  convexLandscapeOnTheRightSideOfTheLandingSite
-    .map(({ x, y }) => `${x},${y}`)
-    .join(`\r\n`)
-)
 
 function drawFromCodingGameLandscape({
   codingGameLandscapeGamePoints,
@@ -171,7 +152,43 @@ function drawLandscape(
   canvas2DContext.stroke()
 }
 
-function getConvexLandscape(
+function convertLandscapeToConvexLandscapeOnBothSidesOfTheLandingSite(
+  landscape: Point[]
+) {
+  const landingSiteLeftPointIndex = getLandingSiteLeftPointIndex(
+    codingGameLandscapePoints
+  )
+
+  const landscapeOnTheLeftSideOfTheLandingSite = landscape.slice(
+    0,
+    landingSiteLeftPointIndex + 1
+  )
+  const convexLandscapeOnTheLeftSideOfTheLandingSite =
+    getConvexLandscapeInOneVerticalDirection(
+      landscapeOnTheLeftSideOfTheLandingSite,
+      VerticalDirection.Down
+    )
+
+  const landscapeOnTheRightSideOfTheLandingSite = landscape.slice(
+    landingSiteLeftPointIndex + 1
+  )
+  const convexLandscapeOnTheRightSideOfTheLandingSite =
+    getConvexLandscapeInOneVerticalDirection(
+      landscapeOnTheRightSideOfTheLandingSite,
+      VerticalDirection.Up
+    )
+
+  return {
+    convexLandscape: [
+      ...convexLandscapeOnTheLeftSideOfTheLandingSite,
+      ...convexLandscapeOnTheRightSideOfTheLandingSite,
+    ],
+    landingSiteLeftPointIndex:
+      convexLandscapeOnTheLeftSideOfTheLandingSite.length,
+  }
+}
+
+function getConvexLandscapeInOneVerticalDirection(
   landscapePoints: Point[],
   verticalDirection: VerticalDirection
 ) {
@@ -254,20 +271,6 @@ function getLandingSiteLeftPointIndex(landscapePoints: Point[]) {
     previousPoint = point
   }
   return 0
-}
-
-function getHighestPointIndex(points: Point[]) {
-  return points.reduce<{
-    highestAltitude: undefined | number
-    highestAltitudeIndex: undefined | number
-  }>(
-    ({ highestAltitude, highestAltitudeIndex }, { y: altitude }, index) => {
-      return highestAltitude === undefined || altitude > highestAltitude
-        ? { highestAltitude: altitude, highestAltitudeIndex: index }
-        : { highestAltitude, highestAltitudeIndex }
-    },
-    { highestAltitude: undefined, highestAltitudeIndex: undefined }
-  ).highestAltitudeIndex as number
 }
 
 function convertCodingGameAltitudeToCanvasAltitude({
