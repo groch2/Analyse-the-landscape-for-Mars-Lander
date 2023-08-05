@@ -18,12 +18,11 @@ class Point {
 }
 
 const codingGameLandscapeGamePoints = [
-  { x: 0, y: 1000 },
-  { x: 300, y: 1500 },
-  { x: 350, y: 1400 },
-  { x: 500, y: 2000 },
-  { x: 1500, y: 2700 },
-  { x: 1700, y: 2000 },
+  { x: 0, y: 2700 },
+  { x: 1000, y: 2500 },
+  { x: 1200, y: 2200 },
+  { x: 1400, y: 1950 },
+  { x: 1600, y: 1800 },
   { x: 3200, y: 1000 },
   { x: 3500, y: 200 },
   { x: 5000, y: 200 },
@@ -34,6 +33,25 @@ const codingGameLandscapeGamePoints = [
   { x: 6600, y: 2600 },
   { x: 6999, y: 2500 },
 ]
+
+codingGameLandscapeGamePoints
+  .slice(1, codingGameLandscapeGamePoints.length - 1)
+  .forEach(({ x, y }) => {
+    x = convertCodingGameLongitudeToCanvasLongitude({
+      codingGameLongitude: x,
+      resolutionFactor,
+    })
+    y = convertCodingGameAltitudeToCanvasAltitude({
+      codingGameAltitude: y,
+      canvasHeight,
+      resolutionFactor,
+    })
+    canvas2DContext.beginPath()
+    canvas2DContext.moveTo(x, y)
+    canvas2DContext.lineTo.apply(canvas2DContext, [x, canvas.height])
+    canvas2DContext.strokeStyle = 'purple'
+    canvas2DContext.stroke()
+  })
 
 const landingSiteLeftPointIndex = getLandingSiteLeftPointIndex(
   codingGameLandscapeGamePoints
