@@ -186,91 +186,91 @@ function convertLandscapeToConvexLandscapeOnBothSidesOfTheLandingSite(
     landingSiteLeftPointIndex:
       convexLandscapeOnTheLeftSideOfTheLandingSite.length,
   }
-}
 
-function getConvexLandscapeInOneVerticalDirection(
-  landscapePoints: Point[],
-  verticalDirection: VerticalDirection
-) {
-  if (landscapePoints.length === 0) {
-    return []
-  }
-  let maxAlitudePoint = landscapePoints[0]
-  const convexLandscape = [landscapePoints[0]]
-  for (let index = 1; index < landscapePoints.length; index++) {
-    const point = landscapePoints[index]
-    maxAlitudePoint = point.y > maxAlitudePoint.y ? point : maxAlitudePoint
-    if (
-      verticalDirection === VerticalDirection.Down &&
-      point.y === maxAlitudePoint.y
-    ) {
-      convexLandscape.splice(
-        0,
-        Infinity,
-        new Point(0, maxAlitudePoint.y),
-        maxAlitudePoint
-      )
+  function getConvexLandscapeInOneVerticalDirection(
+    landscapePoints: Point[],
+    verticalDirection: VerticalDirection
+  ) {
+    if (landscapePoints.length === 0) {
+      return []
     }
-    while (convexLandscape.length > 0) {
-      const lastPoint = convexLandscape.slice(-1)[0]
-      if (convexLandscape.length > 1) {
-        const currentSlope = getSlope({
-          leftPoint: lastPoint,
-          rightPoint: point,
-        })
-        const beforeLastPoint = convexLandscape.slice(-2, -1)[0]
-        const previousSlope = getSlope({
-          leftPoint: beforeLastPoint,
-          rightPoint: lastPoint,
-        })
-        if (currentSlope > previousSlope) {
-          convexLandscape.pop()
-          continue
-        }
+    let maxAlitudePoint = landscapePoints[0]
+    const convexLandscape = [landscapePoints[0]]
+    for (let index = 1; index < landscapePoints.length; index++) {
+      const point = landscapePoints[index]
+      maxAlitudePoint = point.y > maxAlitudePoint.y ? point : maxAlitudePoint
+      if (
+        verticalDirection === VerticalDirection.Down &&
+        point.y === maxAlitudePoint.y
+      ) {
+        convexLandscape.splice(
+          0,
+          Infinity,
+          new Point(0, maxAlitudePoint.y),
+          maxAlitudePoint
+        )
       }
-      break
+      while (convexLandscape.length > 0) {
+        const lastPoint = convexLandscape.slice(-1)[0]
+        if (convexLandscape.length > 1) {
+          const currentSlope = getSlope({
+            leftPoint: lastPoint,
+            rightPoint: point,
+          })
+          const beforeLastPoint = convexLandscape.slice(-2, -1)[0]
+          const previousSlope = getSlope({
+            leftPoint: beforeLastPoint,
+            rightPoint: lastPoint,
+          })
+          if (currentSlope > previousSlope) {
+            convexLandscape.pop()
+            continue
+          }
+        }
+        break
+      }
+      if (
+        verticalDirection === VerticalDirection.Down ||
+        (landscapePoints.length > 0 && point.y > convexLandscape.slice(-1)[0].y)
+      ) {
+        convexLandscape.push(point)
+      }
     }
-    if (
-      verticalDirection === VerticalDirection.Down ||
-      (landscapePoints.length > 0 && point.y > convexLandscape.slice(-1)[0].y)
-    ) {
-      convexLandscape.push(point)
+
+    if (verticalDirection === VerticalDirection.Up) {
+      const lastConvexLandscapePoint = convexLandscape.slice(-1)[0]
+      const { x: lastLandscapePointX } = landscapePoints.slice(-1)[0]
+      if (lastConvexLandscapePoint.x < lastLandscapePointX) {
+        convexLandscape.push(
+          new Point(lastLandscapePointX, lastConvexLandscapePoint.y)
+        )
+      }
+    }
+
+    return convexLandscape
+
+    function getSlope({
+      leftPoint,
+      rightPoint,
+    }: {
+      leftPoint: Point
+      rightPoint: Point
+    }) {
+      return (rightPoint.y - leftPoint.y) / (rightPoint.x - leftPoint.x)
     }
   }
 
-  if (verticalDirection === VerticalDirection.Up) {
-    const lastConvexLandscapePoint = convexLandscape.slice(-1)[0]
-    const { x: lastLandscapePointX } = landscapePoints.slice(-1)[0]
-    if (lastConvexLandscapePoint.x < lastLandscapePointX) {
-      convexLandscape.push(
-        new Point(lastLandscapePointX, lastConvexLandscapePoint.y)
-      )
+  function getLandingSiteLeftPointIndex(landscapePoints: Point[]) {
+    let previousPoint = landscapePoints[0]
+    for (let index = 1; index < landscapePoints.length; index++) {
+      const point = landscapePoints[index]
+      if (point.y === previousPoint.y) {
+        return index - 1
+      }
+      previousPoint = point
     }
+    return 0
   }
-
-  return convexLandscape
-
-  function getSlope({
-    leftPoint,
-    rightPoint,
-  }: {
-    leftPoint: Point
-    rightPoint: Point
-  }) {
-    return (rightPoint.y - leftPoint.y) / (rightPoint.x - leftPoint.x)
-  }
-}
-
-function getLandingSiteLeftPointIndex(landscapePoints: Point[]) {
-  let previousPoint = landscapePoints[0]
-  for (let index = 1; index < landscapePoints.length; index++) {
-    const point = landscapePoints[index]
-    if (point.y === previousPoint.y) {
-      return index - 1
-    }
-    previousPoint = point
-  }
-  return 0
 }
 
 function convertCodingGameAltitudeToCanvasAltitude({
