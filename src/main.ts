@@ -106,10 +106,16 @@ drawFromCodingGameLandscape({
   canvas2DContext,
 })
 
-const solutionOutput = convexLandscapeOnTheLeftSideOfTheLandingSite
-  .map(({ x, y }) => `${x},${y}`)
-  .join(`\r\n`)
-console.log(solutionOutput)
+console.log(
+  convexLandscapeOnTheLeftSideOfTheLandingSite
+    .map(({ x, y }) => `${x},${y}`)
+    .join(`\r\n`)
+)
+console.log(
+  convexLandscapeOnTheRightSideOfTheLandingSite
+    .map(({ x, y }) => `${x},${y}`)
+    .join(`\r\n`)
+)
 
 function drawFromCodingGameLandscape({
   codingGameLandscapeGamePoints,
@@ -207,8 +213,24 @@ function getConvexLandscape(
       }
       break
     }
-    convexLandscape.push(point)
+    if (
+      verticalDirection === VerticalDirection.Down ||
+      (landscapePoints.length > 0 && point.y > convexLandscape.slice(-1)[0].y)
+    ) {
+      convexLandscape.push(point)
+    }
   }
+
+  if (verticalDirection === VerticalDirection.Up) {
+    const lastConvexLandscapePoint = convexLandscape.slice(-1)[0]
+    const { x: lastLandscapePointX } = landscapePoints.slice(-1)[0]
+    if (lastConvexLandscapePoint.x < lastLandscapePointX) {
+      convexLandscape.push(
+        new Point(lastLandscapePointX, lastConvexLandscapePoint.y)
+      )
+    }
+  }
+
   return convexLandscape
 
   function getSlope({
