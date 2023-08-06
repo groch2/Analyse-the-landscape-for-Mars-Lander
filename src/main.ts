@@ -207,25 +207,23 @@ function convertLandscapeToConvexLandscapeOnBothSidesOfTheLandingSite(
           new Point(0, maxAlitudePoint.y),
           maxAlitudePoint
         )
+        continue
       }
-      while (convexLandscape.length > 0) {
+      while (convexLandscape.length > 1) {
         const lastPoint = convexLandscape.slice(-1)[0]
-        if (convexLandscape.length > 1) {
-          const currentSlope = getSlope({
-            leftPoint: lastPoint,
-            rightPoint: point,
-          })
-          const beforeLastPoint = convexLandscape.slice(-2, -1)[0]
-          const previousSlope = getSlope({
-            leftPoint: beforeLastPoint,
-            rightPoint: lastPoint,
-          })
-          if (currentSlope > previousSlope) {
-            convexLandscape.pop()
-            continue
-          }
+        const currentSlope = getSlope({
+          leftPoint: lastPoint,
+          rightPoint: point,
+        })
+        const beforeLastPoint = convexLandscape.slice(-2, -1)[0]
+        const previousSlope = getSlope({
+          leftPoint: beforeLastPoint,
+          rightPoint: lastPoint,
+        })
+        if (currentSlope <= previousSlope) {
+          break
         }
-        break
+        convexLandscape.pop()
       }
       if (
         verticalDirection === VerticalDirection.Down ||
