@@ -1,9 +1,9 @@
-const { innerWidth: viewPortWidth, innerHeight: viewPortHeight } = window
+const { innerWidth: viewPortWidth } = window
 const canvas = document.getElementById('canvas') as HTMLCanvasElement
 
-const resolutionFactor = (viewPortWidth - 20) / canvas.width
-canvas.width *= resolutionFactor
-canvas.height *= resolutionFactor
+const viewPortToCanvasWidthRatio = (viewPortWidth - 20) / canvas.width
+canvas.width *= viewPortToCanvasWidthRatio
+canvas.height *= viewPortToCanvasWidthRatio
 
 const canvas2DContext = canvas.getContext('2d')!
 
@@ -41,10 +41,7 @@ const canvasLandscapePoints = codingGameLandscapePoints.map(({ x, y }) => {
   return new Point(canvas_x, canvas_y)
 })
 
-drawCompleteLandscapeFromCanvasLandscapePoints(
-  canvasLandscapePoints,
-  canvas2DContext
-)
+drawCompleteLandscapeFromLandscapePoints(canvasLandscapePoints, canvas2DContext)
 
 canvas.addEventListener('click', ({ offsetX, offsetY }) => {
   const clickPoint = new Point(offsetX, offsetY)
@@ -69,7 +66,7 @@ canvas.addEventListener('click', ({ offsetX, offsetY }) => {
   )
   canvasLandscapePoints[clickHorizontallyClosestPointIndex] =
     canvasReplacementPoint
-  drawCompleteLandscapeFromCanvasLandscapePoints(
+  drawCompleteLandscapeFromLandscapePoints(
     canvasLandscapePoints,
     canvas2DContext
   )
@@ -79,8 +76,8 @@ canvas.addEventListener('click', ({ offsetX, offsetY }) => {
   }
 })
 
-function drawCompleteLandscapeFromCanvasLandscapePoints(
-  canvasLandscapePoints: Point[],
+function drawCompleteLandscapeFromLandscapePoints(
+  landscapePoints: Point[],
   canvas2DContext: CanvasRenderingContext2D
 ) {
   canvas2DContext.clearRect(
@@ -92,12 +89,12 @@ function drawCompleteLandscapeFromCanvasLandscapePoints(
   canvas2DContext.fillStyle = 'lightgray'
   canvas2DContext.fillRect(0, 0, canvas.width, canvas.height)
   drawVerticalLinesForLandscapePoints(
-    canvasLandscapePoints,
+    landscapePoints,
     canvas2DContext,
     'purple'
   )
-  drawLandscapeHorizon(canvasLandscapePoints, canvas2DContext, 'red')
-  drawConvexLandscape(canvasLandscapePoints, canvas2DContext)
+  drawLandscapeHorizon(landscapePoints, canvas2DContext, 'red')
+  drawConvexLandscape(landscapePoints, canvas2DContext)
 
   function drawVerticalLinesForLandscapePoints(
     landscapePoints: Point[],
