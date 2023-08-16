@@ -17,6 +17,7 @@ enum VerticalDirection {
   Down = 'Down',
 }
 
+const codingGameLandscape = { height: 3000, width: 7000 }
 const codingGameLandscapePoints = [
   { x: 0, y: 100 },
   { x: 1000, y: 500 },
@@ -27,101 +28,38 @@ const codingGameLandscapePoints = [
   { x: 6999, y: 800 },
 ]
 
-const canvasLandscapePoints = convertCodingGamePointsToCanvasPoints(
-  codingGameLandscapePoints,
-  canvasHeight,
-  resolutionFactor
-)
+const canvasLandscapePoints = codingGameLandscapePoints.map(({ x, y }) => {
+  const canvas_x = convertLengthFromScaleToScale({
+    fromLength: x,
+    fromTotalLength: codingGameLandscape.width,
+    toTotalLength: canvas.width,
+  })
+  const canvas_y = convertLengthFromScaleToScale({
+    fromLength: codingGameLandscape.height - y,
+    fromTotalLength: codingGameLandscape.height,
+    toTotalLength: canvas.height,
+  })
+  return new Point(canvas_x, canvas_y)
+})
 
 drawCompleteLandscapeFromCanvasLandscapePoints(
   canvasLandscapePoints,
   canvas2DContext
 )
 
-function drawCompleteLandscapeFromCanvasLandscapePoints(
-  canvasLandscapePoints: Point[],
-  canvas2DContext: CanvasRenderingContext2D
-) {
-  canvas2DContext.clearRect(
-    0,
-    0,
-    canvas2DContext.canvas.width,
-    canvas2DContext.canvas.height
-  )
-  canvas2DContext.fillStyle = 'lightgray'
-  canvas2DContext.fillRect(0, 0, canvas.width, canvas.height)
-  drawVerticalLinesForLandscapePoints(
-    canvasLandscapePoints,
-    canvas2DContext,
-    'purple'
-  )
-  drawLandscapeHorizon(canvasLandscapePoints, canvas2DContext, 'red')
-
-  function drawVerticalLinesForLandscapePoints(
-    canvasLandscapePoints: Point[],
-    canvas2DContext: CanvasRenderingContext2D,
-    linesColor: string
-  ) {
-    canvasLandscapePoints
-      .slice(1, canvasLandscapePoints.length - 1)
-      .forEach(({ x, y }) => {
-        canvas2DContext.beginPath()
-        canvas2DContext.moveTo(x, y)
-        canvas2DContext.lineTo(x, canvas.height)
-        canvas2DContext.strokeStyle = linesColor
-        canvas2DContext.stroke()
-      })
-  }
-}
-
-let intervalId: number | undefined = undefined
-let cursorX: number, cursorY: number
-function saveCursorPosition({ pageX, pageY }: MouseEvent) {
-  cursorX = pageX
-  cursorY = pageY
-}
-let clickHorizontallyClosestPointIndex: number | undefined = undefined
-canvas.addEventListener('mousedown', ({ offsetX, offsetY }) => {
-  console.debug({ offsetX, offsetY })
+canvas.addEventListener('click', ({ offsetX, offsetY }) => {
   const clickPoint = new Point(offsetX, offsetY)
-  const {
-    canvasLandscapePoint: closestPoint,
-    distance,
-    index: _clickHorizontallyClosestPointIndex,
-  } = canvasLandscapePoints
-    .map((canvasLandscapePoint, pointHorizontalIndex) => ({
-      canvasLandscapePoint,
-      distance: getHorizontalDistanceFromPointAToPointB(
+  const { pointHorizontalIndex: clickHorizontallyClosestPointIndex } =
+    canvasLandscapePoints
+      .map((canvasLandscapePoint, pointHorizontalIndex) => ({
         canvasLandscapePoint,
-        clickPoint
-      ),
-      index: pointHorizontalIndex,
-    }))
-    .reduce((state, item) => (item.distance < state.distance ? item : state))
-  clickHorizontallyClosestPointIndex = _clickHorizontallyClosestPointIndex
-  console.log({ 'closest point index': _clickHorizontallyClosestPointIndex })
-  const previousPointX =
-    _clickHorizontallyClosestPointIndex === 0
-      ? 0
-      : canvasLandscapePoints[_clickHorizontallyClosestPointIndex - 1].x
-  const nextPointX =
-    _clickHorizontallyClosestPointIndex === canvasLandscapePoints.length - 1
-      ? canvas.width
-      : canvasLandscapePoints[_clickHorizontallyClosestPointIndex + 1].x
-  console.log({ previousPointX, nextPointX })
-  window.addEventListener('mousemove', saveCursorPosition)
-  intervalId = window.setInterval(() => {
-    console.log({ cursorX, cursorY })
-  }, 100)
-  console.debug({ closestPoint, distance })
-})
-
-canvas.addEventListener('mouseup', ({ offsetX, offsetY }) => {
-  console.debug({ offsetX, offsetY })
-  window.clearInterval(intervalId)
-  window.removeEventListener('mousemove', saveCursorPosition)
-  clickHorizontallyClosestPointIndex =
-    clickHorizontallyClosestPointIndex as number
+        distance: getHorizontalDistanceFromPointAToPointB(
+          canvasLandscapePoint,
+          clickPoint
+        ),
+        pointHorizontalIndex,
+      }))
+      .reduce((state, item) => (item.distance < state.distance ? item : state))
   const canvasReplacementPoint = new Point(
     clickHorizontallyClosestPointIndex === 0
       ? 0
@@ -136,93 +74,40 @@ canvas.addEventListener('mouseup', ({ offsetX, offsetY }) => {
     canvasLandscapePoints,
     canvas2DContext
   )
-
-  const codingGameReplacementPoint = new Point(
-    convertLongitudeFromCanvasToCodingGame({
-      canvasGameLongitude: canvasReplacementPoint.x,
-      resolutionFactor,
-    }),
-    convertAltitudeFromCanvasToCodingGame({
-      canvasAltitude: canvasReplacementPoint.y,
-      canvasHeight: canvas.height,
-      resolutionFactor,
-    })
-  )
-  codingGameLandscapePoints[clickHorizontallyClosestPointIndex] =
-    codingGameReplacementPoint
+  drawConvexLandscape(canvasLandscapePoints, canvas2DContext)
 })
 
-drawConvexLandscape(
-  codingGameLandscapePoints,
-  canvas2DContext,
-  canvasHeight,
-  resolutionFactor
-)
+drawConvexLandscape(canvasLandscapePoints, canvas2DContext)
 
 function drawConvexLandscape(
-  codingGameLandscapePoints: Point[],
-  canvas2DContext: CanvasRenderingContext2D,
-  canvasHeight: number,
-  resolutionFactor: number
+  canvasLandscapePoints: Point[],
+  canvas2DContext: CanvasRenderingContext2D
 ) {
-  const { convexLandscape, landingSiteLeftPointIndex } =
+  const { convexLandscape: _convexLandscape, landingSiteLeftPointIndex } =
     convertLandscapeToConvexLandscapeOnBothSidesOfTheLandingSite(
-      codingGameLandscapePoints
+      canvasLandscapePoints.map(({ x, y }) => new Point(x, canvas.height - y))
     )
+  const convexLandscape = _convexLandscape.map(
+    ({ x, y }) => new Point(x, canvas.height - y)
+  )
   drawFromCodingGameLandscape({
-    codingGameLandscapeGamePoints: convexLandscape.slice(
-      0,
-      landingSiteLeftPointIndex
-    ),
-    canvasHeight,
-    resolutionFactor,
+    canvasLandscapePoints: convexLandscape.slice(0, landingSiteLeftPointIndex),
     canvas2DContext,
   })
   drawFromCodingGameLandscape({
-    codingGameLandscapeGamePoints: convexLandscape.slice(
-      landingSiteLeftPointIndex
-    ),
-    canvasHeight,
-    resolutionFactor,
+    canvasLandscapePoints: convexLandscape.slice(landingSiteLeftPointIndex),
     canvas2DContext,
   })
 
   function drawFromCodingGameLandscape({
-    codingGameLandscapeGamePoints,
-    canvasHeight,
-    resolutionFactor,
+    canvasLandscapePoints,
     canvas2DContext,
   }: {
-    codingGameLandscapeGamePoints: Point[]
-    canvasHeight: number
-    resolutionFactor: number
+    canvasLandscapePoints: Point[]
     canvas2DContext: CanvasRenderingContext2D
   }) {
-    const canvasConvexLandscapePoints = convertCodingGamePointsToCanvasPoints(
-      codingGameLandscapeGamePoints,
-      canvasHeight,
-      resolutionFactor
-    )
-    drawLandscapeHorizon(canvasConvexLandscapePoints, canvas2DContext, 'blue')
+    drawLandscapeHorizon(canvasLandscapePoints, canvas2DContext, 'blue')
   }
-}
-
-function convertCodingGamePointsToCanvasPoints(
-  CodingGamePoints: Point[],
-  canvasHeight: number,
-  resolutionFactor: number
-) {
-  return CodingGamePoints.map(({ x, y }) => ({
-    x: convertLongitudeFromCodingGameToCanvas({
-      codingGameLongitude: x,
-      resolutionFactor,
-    }),
-    y: convertAltitudeFromCodingGameToCanvas({
-      codingGameAltitude: y,
-      canvasHeight,
-      resolutionFactor,
-    }),
-  }))
 }
 
 function drawLandscapeHorizon(
@@ -359,18 +244,6 @@ function convertLandscapeToConvexLandscapeOnBothSidesOfTheLandingSite(
   }
 }
 
-function convertAltitudeFromCodingGameToCanvas({
-  codingGameAltitude,
-  canvasHeight,
-  resolutionFactor,
-}: {
-  codingGameAltitude: number
-  canvasHeight: number
-  resolutionFactor: number
-}) {
-  return (canvasHeight - codingGameAltitude / 10) * resolutionFactor
-}
-
 function convertAltitudeFromCanvasToCodingGame({
   canvasAltitude,
   canvasHeight,
@@ -383,16 +256,6 @@ function convertAltitudeFromCanvasToCodingGame({
   return (canvasAltitude / resolutionFactor + canvasHeight) * 10
 }
 
-function convertLongitudeFromCodingGameToCanvas({
-  codingGameLongitude,
-  resolutionFactor,
-}: {
-  codingGameLongitude: number
-  resolutionFactor: number
-}) {
-  return (codingGameLongitude / 10) * resolutionFactor
-}
-
 function convertLongitudeFromCanvasToCodingGame({
   canvasGameLongitude,
   resolutionFactor,
@@ -403,6 +266,54 @@ function convertLongitudeFromCanvasToCodingGame({
   return (canvasGameLongitude / resolutionFactor + canvasHeight) * 10
 }
 
+function convertLengthFromScaleToScale({
+  fromLength,
+  fromTotalLength,
+  toTotalLength,
+}: {
+  fromLength: number
+  fromTotalLength: number
+  toTotalLength: number
+}) {
+  return (fromLength * toTotalLength) / fromTotalLength
+}
+
 function getHorizontalDistanceFromPointAToPointB(a: Point, b: Point): number {
   return Math.abs(a.x - b.x)
+}
+
+function drawCompleteLandscapeFromCanvasLandscapePoints(
+  canvasLandscapePoints: Point[],
+  canvas2DContext: CanvasRenderingContext2D
+) {
+  canvas2DContext.clearRect(
+    0,
+    0,
+    canvas2DContext.canvas.width,
+    canvas2DContext.canvas.height
+  )
+  canvas2DContext.fillStyle = 'lightgray'
+  canvas2DContext.fillRect(0, 0, canvas.width, canvas.height)
+  drawVerticalLinesForLandscapePoints(
+    canvasLandscapePoints,
+    canvas2DContext,
+    'purple'
+  )
+  drawLandscapeHorizon(canvasLandscapePoints, canvas2DContext, 'red')
+
+  function drawVerticalLinesForLandscapePoints(
+    canvasLandscapePoints: Point[],
+    canvas2DContext: CanvasRenderingContext2D,
+    linesColor: string
+  ) {
+    canvasLandscapePoints
+      .slice(1, canvasLandscapePoints.length - 1)
+      .forEach(({ x, y }) => {
+        canvas2DContext.beginPath()
+        canvas2DContext.moveTo(x, y)
+        canvas2DContext.lineTo(x, canvas.height)
+        canvas2DContext.strokeStyle = linesColor
+        canvas2DContext.stroke()
+      })
+  }
 }
