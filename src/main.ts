@@ -110,7 +110,7 @@ function drawCompleteLandscapeFromLandscapePoints(
     canvas2DContext,
     'purple'
   )
-  drawLandscapeHorizon(landscapePoints, canvas2DContext, 'red')
+  drawLandscape(landscapePoints, canvas2DContext, 'red')
   drawConvexLandscape(landscapePoints, canvas2DContext)
 
   function drawVerticalLinesForLandscapePoints(
@@ -135,27 +135,19 @@ function drawCompleteLandscapeFromLandscapePoints(
       convertLandscapeToConvexLandscapeOnBothSidesOfTheLandingSite(
         landscapePoints
       )
-    drawLandscape({
-      landscapePoints: convexLandscape.slice(0, landingSiteLeftPointIndex),
+    drawLandscape(
+      convexLandscape.slice(0, landingSiteLeftPointIndex),
       canvas2DContext,
-    })
-    drawLandscape({
-      landscapePoints: convexLandscape.slice(landingSiteLeftPointIndex),
+      'blue'
+    )
+    drawLandscape(
+      convexLandscape.slice(landingSiteLeftPointIndex),
       canvas2DContext,
-    })
-
-    function drawLandscape({
-      landscapePoints,
-      canvas2DContext,
-    }: {
-      landscapePoints: Point[]
-      canvas2DContext: CanvasRenderingContext2D
-    }) {
-      drawLandscapeHorizon(landscapePoints, canvas2DContext, 'blue')
-    }
+      'blue'
+    )
   }
 
-  function drawLandscapeHorizon(
+  function drawLandscape(
     canvasLandscapeCoordinates: Point[],
     canvas2DContext: CanvasRenderingContext2D,
     linesColor: string
