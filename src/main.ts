@@ -11,6 +11,27 @@ class Point {
   constructor(readonly x: number, readonly y: number) {}
 }
 
+class Segment {
+  public readonly left: Point
+  public readonly right: Point
+  public readonly up: Point
+  public readonly down: Point
+  constructor(a: Point, b: Point) {
+    this.left = a
+    this.right = b
+    if (a.x > b.x) {
+      this.left = b
+      this.right = a
+    }
+    this.up = a
+    this.down = b
+    if (a.y < b.y) {
+      this.up = b
+      this.down = a
+    }
+  }
+}
+
 enum VerticalDirection {
   Up = 'Up',
   Down = 'Down',
@@ -34,7 +55,7 @@ const canvasLandscapePoints = codingGameLandscapePoints.map(({ x, y }) => {
     toTotalLength: canvas.width,
   })
   const canvas_y = convertLengthFromScaleToScale({
-    fromLength: codingGameLandscape.height - y,
+    fromLength: y,
     fromTotalLength: codingGameLandscape.height,
     toTotalLength: canvas.height,
   })
@@ -42,6 +63,12 @@ const canvasLandscapePoints = codingGameLandscapePoints.map(({ x, y }) => {
 })
 
 drawCompleteLandscapeFromLandscapePoints(canvasLandscapePoints, canvas2DContext)
+
+const secondSegment = new Segment(
+  canvasLandscapePoints[1],
+  canvasLandscapePoints[2]
+)
+drawSegmentSlopeAtEachEnd(secondSegment, canvas2DContext)
 
 canvas.addEventListener('click', ({ offsetX, offsetY }) => {
   const clickPoint = new Point(offsetX, offsetY)
@@ -103,8 +130,8 @@ function drawCompleteLandscapeFromLandscapePoints(
   ) {
     landscapePoints.slice(1, landscapePoints.length - 1).forEach(({ x, y }) => {
       canvas2DContext.beginPath()
-      canvas2DContext.moveTo(x, y)
-      canvas2DContext.lineTo(x, canvas.height)
+      canvas2DContext.moveTo(x, canvas.height)
+      canvas2DContext.lineTo(x, canvas.height - y)
       canvas2DContext.strokeStyle = linesColor
       canvas2DContext.stroke()
     })
@@ -114,13 +141,10 @@ function drawCompleteLandscapeFromLandscapePoints(
     landscapePoints: Point[],
     canvas2DContext: CanvasRenderingContext2D
   ) {
-    const { convexLandscape: _convexLandscape, landingSiteLeftPointIndex } =
+    const { convexLandscape: convexLandscape, landingSiteLeftPointIndex } =
       convertLandscapeToConvexLandscapeOnBothSidesOfTheLandingSite(
-        landscapePoints.map(({ x, y }) => new Point(x, canvas.height - y))
+        landscapePoints
       )
-    const convexLandscape = _convexLandscape.map(
-      ({ x, y }) => new Point(x, canvas.height - y)
-    )
     drawLandscape({
       landscapePoints: convexLandscape.slice(0, landingSiteLeftPointIndex),
       canvas2DContext,
@@ -149,11 +173,13 @@ function drawCompleteLandscapeFromLandscapePoints(
     canvas2DContext.beginPath()
     canvas2DContext.moveTo(
       canvasLandscapeCoordinates[0].x,
-      canvasLandscapeCoordinates[0].y
+      canvas2DContext.canvas.height - canvasLandscapeCoordinates[0].y
     )
     canvasLandscapeCoordinates
       .slice(1)
-      .forEach(({ x, y }) => canvas2DContext.lineTo(x, y))
+      .forEach(({ x, y }) =>
+        canvas2DContext.lineTo(x, canvas2DContext.canvas.height - y)
+      )
     canvas2DContext.strokeStyle = linesColor
     canvas2DContext.stroke()
   }
@@ -287,4 +313,71 @@ function convertLengthFromScaleToScale({
   toTotalLength: number
 }) {
   return (fromLength * toTotalLength) / fromTotalLength
+}
+
+function drawSegmentSlopeAtEachEnd(
+  segment: Segment,
+  canvas2DContext: CanvasRenderingContext2D
+) {
+  if (segment.left.y === segment.right.y) {
+    return
+  }
+  const perpendicularSlope = getPerpendicularSlope(segment)
+  console.debug({ perpendicularSlope })
+  drawStraightLineFromPointAndSlope(
+    segment.left,
+    perpendicularSlope,
+    canvas2DContext,
+    'green'
+  )
+  drawStraightLineFromPointAndSlope(
+    segment.right,
+    perpendicularSlope,
+    canvas2DContext,
+    'brown'
+  )
+}
+
+function* getAllSegments(points: Point[]) {
+  for (let i = 0; i < points.length - 1; i++) {
+    yield new Segment(points[i], points[i + 1])
+  }
+}
+
+function getSlope(segment: Segment): number {
+  return (segment.up.y - segment.down.y) / (segment.right.x - segment.left.x)
+}
+
+function getPerpendicularSlope(segment: Segment): number {
+  return -1 / getSlope(segment)
+}
+
+function drawStraightLineFromPointAndSlope(
+  point: Point,
+  slope: number,
+  canvas2DContext: CanvasRenderingContext2D,
+  lineColor: string
+): void {
+  const ordinateAtOrigin = point.y - slope * point.x
+  const ordinateAtCanvasRightLimit =
+    slope * canvas2DContext.canvas.width + ordinateAtOrigin
+  console.debug({
+    point: new Point(round(point.x, 2), round(point.y, 2)),
+    slope: round(slope, 2),
+    ordinateAtOrigin: round(ordinateAtOrigin, 2),
+    ordinateAtCanvasRightLimit: round(ordinateAtCanvasRightLimit, 2),
+  })
+  canvas2DContext.beginPath()
+  canvas2DContext.moveTo(0, canvas2DContext.canvas.height - ordinateAtOrigin)
+  canvas2DContext.lineTo(
+    canvas2DContext.canvas.width,
+    canvas2DContext.canvas.height - ordinateAtCanvasRightLimit
+  )
+  canvas2DContext.strokeStyle = lineColor
+  canvas2DContext.stroke()
+}
+
+function round(n: number, nbDecimals: number) {
+  const powOf10 = Math.pow(10, nbDecimals)
+  return Math.trunc(n * powOf10) / powOf10
 }
