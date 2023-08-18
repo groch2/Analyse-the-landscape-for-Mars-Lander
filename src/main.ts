@@ -14,20 +14,12 @@ class Point {
 class Segment {
   public readonly left: Point
   public readonly right: Point
-  public readonly up: Point
-  public readonly down: Point
   constructor(a: Point, b: Point) {
     this.left = a
     this.right = b
     if (a.x > b.x) {
       this.left = b
       this.right = a
-    }
-    this.up = a
-    this.down = b
-    if (a.y < b.y) {
-      this.up = b
-      this.down = a
     }
   }
 }
@@ -63,12 +55,10 @@ const canvasLandscapePoints = codingGameLandscapePoints.map(({ x, y }) => {
 })
 
 drawCompleteLandscapeFromLandscapePoints(canvasLandscapePoints, canvas2DContext)
-
-const secondSegment = new Segment(
-  canvasLandscapePoints[1],
-  canvasLandscapePoints[2]
+drawSegmentPerpendicularsAtEachEndForEachSegment(
+  canvasLandscapePoints,
+  canvas2DContext
 )
-drawSegmentSlopeAtEachEnd(secondSegment, canvas2DContext)
 
 canvas.addEventListener('click', ({ offsetX, offsetY }) => {
   const clickPoint = new Point(offsetX, offsetY)
@@ -315,15 +305,15 @@ function convertLengthFromScaleToScale({
   return (fromLength * toTotalLength) / fromTotalLength
 }
 
-function drawSegmentSlopeAtEachEnd(
+function drawSegmentPerpendicularsAtEachEnd(
   segment: Segment,
   canvas2DContext: CanvasRenderingContext2D
 ) {
   if (segment.left.y === segment.right.y) {
-    return
+    drawVerticalLine(segment.left.x, canvas2DContext, 'green')
+    drawVerticalLine(segment.right.x, canvas2DContext, 'brown')
   }
   const perpendicularSlope = getPerpendicularSlope(segment)
-  console.debug({ perpendicularSlope })
   drawStraightLineFromPointAndSlope(
     segment.left,
     perpendicularSlope,
@@ -345,7 +335,7 @@ function* getAllSegments(points: Point[]) {
 }
 
 function getSlope(segment: Segment): number {
-  return (segment.up.y - segment.down.y) / (segment.right.x - segment.left.x)
+  return (segment.right.y - segment.left.y) / (segment.right.x - segment.left.x)
 }
 
 function getPerpendicularSlope(segment: Segment): number {
@@ -361,12 +351,6 @@ function drawStraightLineFromPointAndSlope(
   const ordinateAtOrigin = point.y - slope * point.x
   const ordinateAtCanvasRightLimit =
     slope * canvas2DContext.canvas.width + ordinateAtOrigin
-  console.debug({
-    point: new Point(round(point.x, 2), round(point.y, 2)),
-    slope: round(slope, 2),
-    ordinateAtOrigin: round(ordinateAtOrigin, 2),
-    ordinateAtCanvasRightLimit: round(ordinateAtCanvasRightLimit, 2),
-  })
   canvas2DContext.beginPath()
   canvas2DContext.moveTo(0, canvas2DContext.canvas.height - ordinateAtOrigin)
   canvas2DContext.lineTo(
@@ -377,7 +361,28 @@ function drawStraightLineFromPointAndSlope(
   canvas2DContext.stroke()
 }
 
+function drawVerticalLine(
+  x: number,
+  canvas2DContext: CanvasRenderingContext2D,
+  lineColor: string
+) {
+  canvas2DContext.beginPath()
+  canvas2DContext.moveTo(x, canvas2DContext.canvas.height)
+  canvas2DContext.lineTo(x, 0)
+  canvas2DContext.strokeStyle = lineColor
+  canvas2DContext.stroke()
+}
+
 function round(n: number, nbDecimals: number) {
   const powOf10 = Math.pow(10, nbDecimals)
   return Math.trunc(n * powOf10) / powOf10
+}
+
+function drawSegmentPerpendicularsAtEachEndForEachSegment(
+  canvasLandscapePoints: Point[],
+  canvas2DContext: CanvasRenderingContext2D
+) {
+  ;[...getAllSegments(canvasLandscapePoints)].forEach((segment) =>
+    drawSegmentPerpendicularsAtEachEnd(segment, canvas2DContext)
+  )
 }
