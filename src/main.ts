@@ -55,6 +55,18 @@ const canvasLandscapePoints = codingGameLandscapePoints.map(({ x, y }) => {
     toTotalLength: canvas.height,
   })
   return new Point(canvas_x, canvas_y)
+
+  function convertLengthFromScaleToScale({
+    fromLength,
+    fromTotalLength,
+    toTotalLength,
+  }: {
+    fromLength: number
+    fromTotalLength: number
+    toTotalLength: number
+  }) {
+    return (fromLength * toTotalLength) / fromTotalLength
+  }
 })
 
 let displayConvexLandscape = true
@@ -78,6 +90,190 @@ function drawCompleteLandscape(
     canvasLandscapePoints,
     canvas2DContext
   )
+
+  function clearLandscape(canvas2DContext: CanvasRenderingContext2D) {
+    canvas2DContext.clearRect(
+      0,
+      0,
+      canvas2DContext.canvas.width,
+      canvas2DContext.canvas.height
+    )
+    canvas2DContext.fillStyle = 'lightgray'
+    canvas2DContext.fillRect(0, 0, canvas.width, canvas.height)
+  }
+
+  function drawConvexLandscape(
+    landscapePoints: Point[],
+    canvas2DContext: CanvasRenderingContext2D,
+    linesColor: string
+  ) {
+    const { convexLandscape: convexLandscape, landingSiteLeftPointIndex } =
+      convertLandscapeToConvexLandscapeOnBothSidesOfTheLandingSite(
+        landscapePoints
+      )
+    drawLandscape(
+      convexLandscape.slice(0, landingSiteLeftPointIndex),
+      canvas2DContext,
+      linesColor
+    )
+    drawLandscape(
+      convexLandscape.slice(landingSiteLeftPointIndex),
+      canvas2DContext,
+      linesColor
+    )
+
+    function convertLandscapeToConvexLandscapeOnBothSidesOfTheLandingSite(
+      landscape: Point[]
+    ) {
+      const landingSiteLeftPointIndex = getLandingSiteLeftPointIndex(landscape)
+
+      const landscapeOnTheLeftSideOfTheLandingSite = landscape.slice(
+        0,
+        landingSiteLeftPointIndex + 1
+      )
+      const convexLandscapeOnTheLeftSideOfTheLandingSite =
+        getConvexLandscapeInOneVerticalDirection(
+          landscapeOnTheLeftSideOfTheLandingSite,
+          VerticalDirection.Down
+        )
+
+      const landscapeOnTheRightSideOfTheLandingSite = landscape.slice(
+        landingSiteLeftPointIndex + 1
+      )
+      const convexLandscapeOnTheRightSideOfTheLandingSite =
+        getConvexLandscapeInOneVerticalDirection(
+          landscapeOnTheRightSideOfTheLandingSite,
+          VerticalDirection.Up
+        )
+
+      return {
+        convexLandscape: [
+          ...convexLandscapeOnTheLeftSideOfTheLandingSite,
+          ...convexLandscapeOnTheRightSideOfTheLandingSite,
+        ],
+        landingSiteLeftPointIndex:
+          convexLandscapeOnTheLeftSideOfTheLandingSite.length,
+      }
+
+      function getConvexLandscapeInOneVerticalDirection(
+        landscapePoints: Point[],
+        verticalDirection: VerticalDirection
+      ) {
+        if (landscapePoints.length === 0) {
+          return []
+        }
+        let maxAlitudePoint = landscapePoints[0]
+        const convexLandscape = [landscapePoints[0]]
+        for (let index = 1; index < landscapePoints.length; index++) {
+          const point = landscapePoints[index]
+          maxAlitudePoint =
+            point.y > maxAlitudePoint.y ? point : maxAlitudePoint
+          if (
+            verticalDirection === VerticalDirection.Down &&
+            point.y === maxAlitudePoint.y
+          ) {
+            convexLandscape.splice(
+              0,
+              Infinity,
+              new Point(0, maxAlitudePoint.y),
+              maxAlitudePoint
+            )
+            continue
+          }
+          while (convexLandscape.length > 1) {
+            const lastPoint = convexLandscape.slice(-1)[0]
+            const currentSlope = getSlope({
+              leftPoint: lastPoint,
+              rightPoint: point,
+            })
+            const beforeLastPoint = convexLandscape.slice(-2, -1)[0]
+            const previousSlope = getSlope({
+              leftPoint: beforeLastPoint,
+              rightPoint: lastPoint,
+            })
+            if (currentSlope <= previousSlope) {
+              break
+            }
+            convexLandscape.pop()
+          }
+          if (
+            verticalDirection === VerticalDirection.Down ||
+            (landscapePoints.length > 0 &&
+              point.y > convexLandscape.slice(-1)[0].y)
+          ) {
+            convexLandscape.push(point)
+          }
+        }
+
+        if (verticalDirection === VerticalDirection.Up) {
+          const lastConvexLandscapePoint = convexLandscape.slice(-1)[0]
+          const { x: lastLandscapePointX } = landscapePoints.slice(-1)[0]
+          if (lastConvexLandscapePoint.x < lastLandscapePointX) {
+            convexLandscape.push(
+              new Point(lastLandscapePointX, lastConvexLandscapePoint.y)
+            )
+          }
+        }
+
+        return convexLandscape
+
+        function getSlope({
+          leftPoint,
+          rightPoint,
+        }: {
+          leftPoint: Point
+          rightPoint: Point
+        }) {
+          return (rightPoint.y - leftPoint.y) / (rightPoint.x - leftPoint.x)
+        }
+      }
+
+      function getLandingSiteLeftPointIndex(landscapePoints: Point[]) {
+        let previousPoint = landscapePoints[0]
+        for (let index = 1; index < landscapePoints.length; index++) {
+          const point = landscapePoints[index]
+          if (point.y === previousPoint.y) {
+            return index - 1
+          }
+          previousPoint = point
+        }
+        return 0
+      }
+    }
+  }
+
+  function drawLandscape(
+    canvasLandscapeCoordinates: Point[],
+    canvas2DContext: CanvasRenderingContext2D,
+    linesColor: string
+  ) {
+    canvas2DContext.beginPath()
+    canvas2DContext.moveTo(
+      canvasLandscapeCoordinates[0].x,
+      canvas2DContext.canvas.height - canvasLandscapeCoordinates[0].y
+    )
+    canvasLandscapeCoordinates
+      .slice(1)
+      .forEach(({ x, y }) =>
+        canvas2DContext.lineTo(x, canvas2DContext.canvas.height - y)
+      )
+    canvas2DContext.strokeStyle = linesColor
+    canvas2DContext.stroke()
+  }
+
+  function drawVerticalLinesBetweenCanvasBottomAndLandscapePoints(
+    landscapePoints: Point[],
+    canvas2DContext: CanvasRenderingContext2D,
+    linesColor: string
+  ) {
+    landscapePoints.slice(1, landscapePoints.length - 1).forEach(({ x, y }) => {
+      canvas2DContext.beginPath()
+      canvas2DContext.moveTo(x, canvas.height)
+      canvas2DContext.lineTo(x, canvas.height - y)
+      canvas2DContext.strokeStyle = linesColor
+      canvas2DContext.stroke()
+    })
+  }
 }
 
 canvas.addEventListener('click', ({ offsetX, offsetY }) => {
@@ -106,201 +302,6 @@ toggleConvexLandscapeVisibilityButton.addEventListener(
   'click',
   toggleConvexLandscapeVisibility
 )
-
-function clearLandscape(canvas2DContext: CanvasRenderingContext2D) {
-  canvas2DContext.clearRect(
-    0,
-    0,
-    canvas2DContext.canvas.width,
-    canvas2DContext.canvas.height
-  )
-  canvas2DContext.fillStyle = 'lightgray'
-  canvas2DContext.fillRect(0, 0, canvas.width, canvas.height)
-}
-
-function drawConvexLandscape(
-  landscapePoints: Point[],
-  canvas2DContext: CanvasRenderingContext2D,
-  linesColor: string
-) {
-  const { convexLandscape: convexLandscape, landingSiteLeftPointIndex } =
-    convertLandscapeToConvexLandscapeOnBothSidesOfTheLandingSite(
-      landscapePoints
-    )
-  drawLandscape(
-    convexLandscape.slice(0, landingSiteLeftPointIndex),
-    canvas2DContext,
-    linesColor
-  )
-  drawLandscape(
-    convexLandscape.slice(landingSiteLeftPointIndex),
-    canvas2DContext,
-    linesColor
-  )
-
-  function convertLandscapeToConvexLandscapeOnBothSidesOfTheLandingSite(
-    landscape: Point[]
-  ) {
-    const landingSiteLeftPointIndex = getLandingSiteLeftPointIndex(landscape)
-
-    const landscapeOnTheLeftSideOfTheLandingSite = landscape.slice(
-      0,
-      landingSiteLeftPointIndex + 1
-    )
-    const convexLandscapeOnTheLeftSideOfTheLandingSite =
-      getConvexLandscapeInOneVerticalDirection(
-        landscapeOnTheLeftSideOfTheLandingSite,
-        VerticalDirection.Down
-      )
-
-    const landscapeOnTheRightSideOfTheLandingSite = landscape.slice(
-      landingSiteLeftPointIndex + 1
-    )
-    const convexLandscapeOnTheRightSideOfTheLandingSite =
-      getConvexLandscapeInOneVerticalDirection(
-        landscapeOnTheRightSideOfTheLandingSite,
-        VerticalDirection.Up
-      )
-
-    return {
-      convexLandscape: [
-        ...convexLandscapeOnTheLeftSideOfTheLandingSite,
-        ...convexLandscapeOnTheRightSideOfTheLandingSite,
-      ],
-      landingSiteLeftPointIndex:
-        convexLandscapeOnTheLeftSideOfTheLandingSite.length,
-    }
-
-    function getConvexLandscapeInOneVerticalDirection(
-      landscapePoints: Point[],
-      verticalDirection: VerticalDirection
-    ) {
-      if (landscapePoints.length === 0) {
-        return []
-      }
-      let maxAlitudePoint = landscapePoints[0]
-      const convexLandscape = [landscapePoints[0]]
-      for (let index = 1; index < landscapePoints.length; index++) {
-        const point = landscapePoints[index]
-        maxAlitudePoint = point.y > maxAlitudePoint.y ? point : maxAlitudePoint
-        if (
-          verticalDirection === VerticalDirection.Down &&
-          point.y === maxAlitudePoint.y
-        ) {
-          convexLandscape.splice(
-            0,
-            Infinity,
-            new Point(0, maxAlitudePoint.y),
-            maxAlitudePoint
-          )
-          continue
-        }
-        while (convexLandscape.length > 1) {
-          const lastPoint = convexLandscape.slice(-1)[0]
-          const currentSlope = getSlope({
-            leftPoint: lastPoint,
-            rightPoint: point,
-          })
-          const beforeLastPoint = convexLandscape.slice(-2, -1)[0]
-          const previousSlope = getSlope({
-            leftPoint: beforeLastPoint,
-            rightPoint: lastPoint,
-          })
-          if (currentSlope <= previousSlope) {
-            break
-          }
-          convexLandscape.pop()
-        }
-        if (
-          verticalDirection === VerticalDirection.Down ||
-          (landscapePoints.length > 0 &&
-            point.y > convexLandscape.slice(-1)[0].y)
-        ) {
-          convexLandscape.push(point)
-        }
-      }
-
-      if (verticalDirection === VerticalDirection.Up) {
-        const lastConvexLandscapePoint = convexLandscape.slice(-1)[0]
-        const { x: lastLandscapePointX } = landscapePoints.slice(-1)[0]
-        if (lastConvexLandscapePoint.x < lastLandscapePointX) {
-          convexLandscape.push(
-            new Point(lastLandscapePointX, lastConvexLandscapePoint.y)
-          )
-        }
-      }
-
-      return convexLandscape
-
-      function getSlope({
-        leftPoint,
-        rightPoint,
-      }: {
-        leftPoint: Point
-        rightPoint: Point
-      }) {
-        return (rightPoint.y - leftPoint.y) / (rightPoint.x - leftPoint.x)
-      }
-    }
-
-    function getLandingSiteLeftPointIndex(landscapePoints: Point[]) {
-      let previousPoint = landscapePoints[0]
-      for (let index = 1; index < landscapePoints.length; index++) {
-        const point = landscapePoints[index]
-        if (point.y === previousPoint.y) {
-          return index - 1
-        }
-        previousPoint = point
-      }
-      return 0
-    }
-  }
-}
-
-function drawLandscape(
-  canvasLandscapeCoordinates: Point[],
-  canvas2DContext: CanvasRenderingContext2D,
-  linesColor: string
-) {
-  canvas2DContext.beginPath()
-  canvas2DContext.moveTo(
-    canvasLandscapeCoordinates[0].x,
-    canvas2DContext.canvas.height - canvasLandscapeCoordinates[0].y
-  )
-  canvasLandscapeCoordinates
-    .slice(1)
-    .forEach(({ x, y }) =>
-      canvas2DContext.lineTo(x, canvas2DContext.canvas.height - y)
-    )
-  canvas2DContext.strokeStyle = linesColor
-  canvas2DContext.stroke()
-}
-
-function drawVerticalLinesBetweenCanvasBottomAndLandscapePoints(
-  landscapePoints: Point[],
-  canvas2DContext: CanvasRenderingContext2D,
-  linesColor: string
-) {
-  landscapePoints.slice(1, landscapePoints.length - 1).forEach(({ x, y }) => {
-    canvas2DContext.beginPath()
-    canvas2DContext.moveTo(x, canvas.height)
-    canvas2DContext.lineTo(x, canvas.height - y)
-    canvas2DContext.strokeStyle = linesColor
-    canvas2DContext.stroke()
-  })
-}
-
-function convertLengthFromScaleToScale({
-  fromLength,
-  fromTotalLength,
-  toTotalLength,
-}: {
-  fromLength: number
-  fromTotalLength: number
-  toTotalLength: number
-}) {
-  return (fromLength * toTotalLength) / fromTotalLength
-}
 
 function drawSegmentPerpendicularsAtEachEnd(
   segment: Segment,
