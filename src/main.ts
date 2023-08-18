@@ -57,6 +57,7 @@ const canvasLandscapePoints = codingGameLandscapePoints.map(({ x, y }) => {
   return new Point(canvas_x, canvas_y)
 })
 
+let displayConvexLandscape = true
 drawCompleteLandscape(canvasLandscapePoints, canvas2DContext)
 
 function drawCompleteLandscape(
@@ -70,7 +71,9 @@ function drawCompleteLandscape(
     canvas2DContext,
     'purple'
   )
-  drawConvexLandscape(canvasLandscapePoints, canvas2DContext, 'blue')
+  if (displayConvexLandscape === true) {
+    drawConvexLandscape(canvasLandscapePoints, canvas2DContext, 'blue')
+  }
   drawSegmentPerpendicularsAtEachEndForEachSegment(
     canvasLandscapePoints,
     canvas2DContext
@@ -382,5 +385,6 @@ function drawSegmentPerpendicularsAtEachEndForEachSegment(
 }
 
 function toggleConvexLandscapeVisibility() {
-  console.debug('toggleConvexLandscapeVisibility')
+  displayConvexLandscape = !displayConvexLandscape
+  drawCompleteLandscape(canvasLandscapePoints, canvas2DContext)
 }
