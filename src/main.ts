@@ -1,5 +1,8 @@
 const { innerWidth: viewPortWidth } = window
 const canvas = document.getElementById('canvas') as HTMLCanvasElement
+const toggleConvexLandscapeVisibilityButton = document.getElementById(
+  'toggleConvexLandscapeVisibility'
+) as HTMLButtonElement
 
 const viewPortToCanvasWidthRatio = (viewPortWidth - 20) / canvas.width
 canvas.width *= viewPortToCanvasWidthRatio
@@ -54,22 +57,32 @@ const canvasLandscapePoints = codingGameLandscapePoints.map(({ x, y }) => {
   return new Point(canvas_x, canvas_y)
 })
 
-drawCompleteLandscapeFromLandscapePoints(canvasLandscapePoints, canvas2DContext)
-drawSegmentPerpendicularsAtEachEndForEachSegment(
-  canvasLandscapePoints,
-  canvas2DContext
-)
+drawCompleteLandscape(canvasLandscapePoints, canvas2DContext)
+
+function drawCompleteLandscape(
+  canvasLandscapePoints: Point[],
+  canvas2DContext: CanvasRenderingContext2D
+) {
+  clearLandscape(canvas2DContext)
+  drawLandscape(canvasLandscapePoints, canvas2DContext, 'red')
+  drawVerticalLinesBetweenCanvasBottomAndLandscapePoints(
+    canvasLandscapePoints,
+    canvas2DContext,
+    'purple'
+  )
+  drawConvexLandscape(canvasLandscapePoints, canvas2DContext, 'blue')
+  drawSegmentPerpendicularsAtEachEndForEachSegment(
+    canvasLandscapePoints,
+    canvas2DContext
+  )
+}
 
 canvas.addEventListener('click', ({ offsetX, offsetY }) => {
-  const clickPoint = new Point(offsetX, offsetY)
   const { pointHorizontalIndex: clickHorizontallyClosestPointIndex } =
     canvasLandscapePoints
       .map((canvasLandscapePoint, pointHorizontalIndex) => ({
         canvasLandscapePoint,
-        distance: getHorizontalDistanceFromPointAToPointB(
-          canvasLandscapePoint,
-          clickPoint
-        ),
+        distance: Math.abs(offsetX - canvasLandscapePoint.x),
         pointHorizontalIndex,
       }))
       .reduce((state, item) => (item.distance < state.distance ? item : state))
@@ -79,24 +92,19 @@ canvas.addEventListener('click', ({ offsetX, offsetY }) => {
       : clickHorizontallyClosestPointIndex === canvasLandscapePoints.length - 1
       ? canvas.width
       : offsetX,
-    offsetY
+    canvas.height - offsetY
   )
   canvasLandscapePoints[clickHorizontallyClosestPointIndex] =
     canvasReplacementPoint
-  drawCompleteLandscapeFromLandscapePoints(
-    canvasLandscapePoints,
-    canvas2DContext
-  )
-
-  function getHorizontalDistanceFromPointAToPointB(a: Point, b: Point): number {
-    return Math.abs(a.x - b.x)
-  }
+  drawCompleteLandscape(canvasLandscapePoints, canvas2DContext)
 })
 
-function drawCompleteLandscapeFromLandscapePoints(
-  landscapePoints: Point[],
-  canvas2DContext: CanvasRenderingContext2D
-) {
+toggleConvexLandscapeVisibilityButton.addEventListener(
+  'click',
+  toggleConvexLandscapeVisibility
+)
+
+function clearLandscape(canvas2DContext: CanvasRenderingContext2D) {
   canvas2DContext.clearRect(
     0,
     0,
@@ -105,66 +113,27 @@ function drawCompleteLandscapeFromLandscapePoints(
   )
   canvas2DContext.fillStyle = 'lightgray'
   canvas2DContext.fillRect(0, 0, canvas.width, canvas.height)
-  drawVerticalLinesForLandscapePoints(
-    landscapePoints,
+}
+
+function drawConvexLandscape(
+  landscapePoints: Point[],
+  canvas2DContext: CanvasRenderingContext2D,
+  linesColor: string
+) {
+  const { convexLandscape: convexLandscape, landingSiteLeftPointIndex } =
+    convertLandscapeToConvexLandscapeOnBothSidesOfTheLandingSite(
+      landscapePoints
+    )
+  drawLandscape(
+    convexLandscape.slice(0, landingSiteLeftPointIndex),
     canvas2DContext,
-    'purple'
+    linesColor
   )
-  drawLandscape(landscapePoints, canvas2DContext, 'red')
-  drawConvexLandscape(landscapePoints, canvas2DContext)
-
-  function drawVerticalLinesForLandscapePoints(
-    landscapePoints: Point[],
-    canvas2DContext: CanvasRenderingContext2D,
-    linesColor: string
-  ) {
-    landscapePoints.slice(1, landscapePoints.length - 1).forEach(({ x, y }) => {
-      canvas2DContext.beginPath()
-      canvas2DContext.moveTo(x, canvas.height)
-      canvas2DContext.lineTo(x, canvas.height - y)
-      canvas2DContext.strokeStyle = linesColor
-      canvas2DContext.stroke()
-    })
-  }
-
-  function drawConvexLandscape(
-    landscapePoints: Point[],
-    canvas2DContext: CanvasRenderingContext2D
-  ) {
-    const { convexLandscape: convexLandscape, landingSiteLeftPointIndex } =
-      convertLandscapeToConvexLandscapeOnBothSidesOfTheLandingSite(
-        landscapePoints
-      )
-    drawLandscape(
-      convexLandscape.slice(0, landingSiteLeftPointIndex),
-      canvas2DContext,
-      'blue'
-    )
-    drawLandscape(
-      convexLandscape.slice(landingSiteLeftPointIndex),
-      canvas2DContext,
-      'blue'
-    )
-  }
-
-  function drawLandscape(
-    canvasLandscapeCoordinates: Point[],
-    canvas2DContext: CanvasRenderingContext2D,
-    linesColor: string
-  ) {
-    canvas2DContext.beginPath()
-    canvas2DContext.moveTo(
-      canvasLandscapeCoordinates[0].x,
-      canvas2DContext.canvas.height - canvasLandscapeCoordinates[0].y
-    )
-    canvasLandscapeCoordinates
-      .slice(1)
-      .forEach(({ x, y }) =>
-        canvas2DContext.lineTo(x, canvas2DContext.canvas.height - y)
-      )
-    canvas2DContext.strokeStyle = linesColor
-    canvas2DContext.stroke()
-  }
+  drawLandscape(
+    convexLandscape.slice(landingSiteLeftPointIndex),
+    canvas2DContext,
+    linesColor
+  )
 
   function convertLandscapeToConvexLandscapeOnBothSidesOfTheLandingSite(
     landscape: Point[]
@@ -285,6 +254,39 @@ function drawCompleteLandscapeFromLandscapePoints(
   }
 }
 
+function drawLandscape(
+  canvasLandscapeCoordinates: Point[],
+  canvas2DContext: CanvasRenderingContext2D,
+  linesColor: string
+) {
+  canvas2DContext.beginPath()
+  canvas2DContext.moveTo(
+    canvasLandscapeCoordinates[0].x,
+    canvas2DContext.canvas.height - canvasLandscapeCoordinates[0].y
+  )
+  canvasLandscapeCoordinates
+    .slice(1)
+    .forEach(({ x, y }) =>
+      canvas2DContext.lineTo(x, canvas2DContext.canvas.height - y)
+    )
+  canvas2DContext.strokeStyle = linesColor
+  canvas2DContext.stroke()
+}
+
+function drawVerticalLinesBetweenCanvasBottomAndLandscapePoints(
+  landscapePoints: Point[],
+  canvas2DContext: CanvasRenderingContext2D,
+  linesColor: string
+) {
+  landscapePoints.slice(1, landscapePoints.length - 1).forEach(({ x, y }) => {
+    canvas2DContext.beginPath()
+    canvas2DContext.moveTo(x, canvas.height)
+    canvas2DContext.lineTo(x, canvas.height - y)
+    canvas2DContext.strokeStyle = linesColor
+    canvas2DContext.stroke()
+  })
+}
+
 function convertLengthFromScaleToScale({
   fromLength,
   fromTotalLength,
@@ -377,4 +379,8 @@ function drawSegmentPerpendicularsAtEachEndForEachSegment(
   ;[...getAllSegments(canvasLandscapePoints)].forEach((segment) =>
     drawSegmentPerpendicularsAtEachEnd(segment, canvas2DContext)
   )
+}
+
+function toggleConvexLandscapeVisibility() {
+  console.debug('toggleConvexLandscapeVisibility')
 }
