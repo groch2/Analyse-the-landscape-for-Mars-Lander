@@ -86,7 +86,7 @@ function drawCompleteLandscape(
   if (displayConvexLandscape === true) {
     drawConvexLandscape(canvasLandscapePoints, canvas2DContext, 'blue')
   }
-  drawSegmentPerpendicularsAtEachEndForEachSegment(
+  drawMiddleSlopeAtEachPairsOfSegmentJunctions(
     canvasLandscapePoints,
     canvas2DContext
   )
@@ -303,27 +303,79 @@ toggleConvexLandscapeVisibilityButton.addEventListener(
   toggleConvexLandscapeVisibility
 )
 
-function drawSegmentPerpendicularsAtEachEnd(
-  segment: Segment,
+function drawMiddleSlopeAtEachPairsOfSegmentJunctions(
+  canvasLandscapePoints: Point[],
   canvas2DContext: CanvasRenderingContext2D
 ) {
-  if (segment.left.y === segment.right.y) {
-    drawVerticalLine(segment.left.x, canvas2DContext, 'green')
-    drawVerticalLine(segment.right.x, canvas2DContext, 'brown')
-  }
-  const perpendicularSlope = getPerpendicularSlope(segment)
+  const oppositeSide_1 = canvasLandscapePoints[1].y - canvasLandscapePoints[0].y
+  const adjacentSide_1 = canvasLandscapePoints[1].x - canvasLandscapePoints[0].x
+  const hypotenuse_1 = Math.sqrt(
+    Math.pow(oppositeSide_1, 2) + Math.pow(adjacentSide_1, 2)
+  )
+  const angle_1 = angleInRadiansToDregrees(
+    Math.asin(oppositeSide_1 / hypotenuse_1)
+  )
+
+  const oppositeSide_2 = canvasLandscapePoints[2].y - canvasLandscapePoints[1].y
+  const adjacentSide_2 = canvasLandscapePoints[2].x - canvasLandscapePoints[1].x
+  const hypotenuse_2 = Math.sqrt(
+    Math.pow(oppositeSide_2, 2) + Math.pow(adjacentSide_2, 2)
+  )
+  const angle_2 = angleInRadiansToDregrees(
+    Math.asin(adjacentSide_2 / hypotenuse_2)
+  )
+
+  const slope = Math.tan(
+    angleInDegreesToRadians(45) -
+      angleInDegreesToRadians(angle_1) / 2 +
+      angleInDegreesToRadians(angle_2) / 2
+  )
   drawStraightLineFromPointAndSlope(
-    segment.left,
-    perpendicularSlope,
+    canvasLandscapePoints[1],
+    -slope,
     canvas2DContext,
     'green'
   )
-  drawStraightLineFromPointAndSlope(
-    segment.right,
-    perpendicularSlope,
-    canvas2DContext,
-    'brown'
+}
+
+function angleInRadiansToDregrees(angleInRadians: number) {
+  return (angleInRadians * 180) / Math.PI
+}
+
+function angleInDegreesToRadians(angleInDegrees: number) {
+  return (angleInDegrees * Math.PI) / 180
+}
+
+function drawSegmentPerpendicularsAtEachEndForEachSegment(
+  canvasLandscapePoints: Point[],
+  canvas2DContext: CanvasRenderingContext2D
+) {
+  ;[...getAllSegments(canvasLandscapePoints)].forEach((segment) =>
+    drawSegmentPerpendicularsAtEachEnd(segment, canvas2DContext)
   )
+
+  function drawSegmentPerpendicularsAtEachEnd(
+    segment: Segment,
+    canvas2DContext: CanvasRenderingContext2D
+  ) {
+    if (segment.left.y === segment.right.y) {
+      drawVerticalLine(segment.left.x, canvas2DContext, 'green')
+      drawVerticalLine(segment.right.x, canvas2DContext, 'brown')
+    }
+    const perpendicularSlope = getPerpendicularSlope(segment)
+    drawStraightLineFromPointAndSlope(
+      segment.left,
+      perpendicularSlope,
+      canvas2DContext,
+      'green'
+    )
+    drawStraightLineFromPointAndSlope(
+      segment.right,
+      perpendicularSlope,
+      canvas2DContext,
+      'brown'
+    )
+  }
 }
 
 function* getAllSegments(points: Point[]) {
@@ -371,18 +423,35 @@ function drawVerticalLine(
   canvas2DContext.stroke()
 }
 
+function drawVerticalLineFromBottomToY(
+  x: number,
+  y: number,
+  canvas2DContext: CanvasRenderingContext2D,
+  lineColor: string
+) {
+  canvas2DContext.beginPath()
+  canvas2DContext.moveTo(x, y)
+  canvas2DContext.lineTo(x, canvas2DContext.canvas.height)
+  canvas2DContext.strokeStyle = lineColor
+  canvas2DContext.stroke()
+}
+
+function drawHorizontalLine(
+  y: number,
+  canvas2DContext: CanvasRenderingContext2D,
+  lineColor: string
+) {
+  y = canvas2DContext.canvas.height - y
+  canvas2DContext.beginPath()
+  canvas2DContext.moveTo(0, y)
+  canvas2DContext.lineTo(canvas2DContext.canvas.width, y)
+  canvas2DContext.strokeStyle = lineColor
+  canvas2DContext.stroke()
+}
+
 function round(n: number, nbDecimals: number) {
   const powOf10 = Math.pow(10, nbDecimals)
   return Math.trunc(n * powOf10) / powOf10
-}
-
-function drawSegmentPerpendicularsAtEachEndForEachSegment(
-  canvasLandscapePoints: Point[],
-  canvas2DContext: CanvasRenderingContext2D
-) {
-  ;[...getAllSegments(canvasLandscapePoints)].forEach((segment) =>
-    drawSegmentPerpendicularsAtEachEnd(segment, canvas2DContext)
-  )
 }
 
 function toggleConvexLandscapeVisibility() {
