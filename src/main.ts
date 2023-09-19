@@ -307,32 +307,8 @@ function drawMiddleSlopeAtEachPairsOfSegmentJunctions(
   canvasLandscapePoints: Point[],
   canvas2DContext: CanvasRenderingContext2D
 ) {
-  const oppositeSide_1 = canvasLandscapePoints[1].y - canvasLandscapePoints[0].y
-  const adjacentSide_1 = canvasLandscapePoints[1].x - canvasLandscapePoints[0].x
-  const hypotenuse_1 = Math.sqrt(
-    Math.pow(oppositeSide_1, 2) + Math.pow(adjacentSide_1, 2)
-  )
-  const angle_1 = angleInRadiansToDregrees(
-    Math.asin(oppositeSide_1 / hypotenuse_1)
-  )
-
-  const oppositeSide_2 = canvasLandscapePoints[2].y - canvasLandscapePoints[1].y
-  const adjacentSide_2 = canvasLandscapePoints[2].x - canvasLandscapePoints[1].x
-  const hypotenuse_2 = Math.sqrt(
-    Math.pow(oppositeSide_2, 2) + Math.pow(adjacentSide_2, 2)
-  )
-  const angle_2 = angleInRadiansToDregrees(
-    Math.asin(adjacentSide_2 / hypotenuse_2)
-  )
-
-  const slope = Math.tan(
-    angleInDegreesToRadians(45) -
-      angleInDegreesToRadians(angle_1) / 2 +
-      angleInDegreesToRadians(angle_2) / 2
-  )
-  drawStraightLineFromPointAndSlope(
-    canvasLandscapePoints[1],
-    -slope,
+  drawMiddleLineOfAngleOf2Segments(
+    canvasLandscapePoints.slice(0, 3) as [Point, Point, Point],
     canvas2DContext,
     'green'
   )
@@ -457,4 +433,46 @@ function round(n: number, nbDecimals: number) {
 function toggleConvexLandscapeVisibility() {
   displayConvexLandscape = !displayConvexLandscape
   drawCompleteLandscape(canvasLandscapePoints, canvas2DContext)
+}
+
+function drawMiddleLineOfAngleOf2Segments(
+  canvasLandscapePoints: readonly [Point, Point, Point],
+  canvas2DContext: CanvasRenderingContext2D,
+  color: string
+) {
+  if (canvasLandscapePoints[1].y < canvasLandscapePoints[2].y) {
+    const oppositeSide_1 =
+      canvasLandscapePoints[1].y - canvasLandscapePoints[0].y
+    const adjacentSide_1 =
+      canvasLandscapePoints[1].x - canvasLandscapePoints[0].x
+    const hypotenuse_1 = Math.sqrt(
+      Math.pow(oppositeSide_1, 2) + Math.pow(adjacentSide_1, 2)
+    )
+    const angle_1 = angleInRadiansToDregrees(
+      Math.asin(oppositeSide_1 / hypotenuse_1)
+    )
+
+    const oppositeSide_2 =
+      canvasLandscapePoints[2].y - canvasLandscapePoints[1].y
+    const adjacentSide_2 =
+      canvasLandscapePoints[2].x - canvasLandscapePoints[1].x
+    const hypotenuse_2 = Math.sqrt(
+      Math.pow(oppositeSide_2, 2) + Math.pow(adjacentSide_2, 2)
+    )
+    const angle_2 = angleInRadiansToDregrees(
+      Math.asin(adjacentSide_2 / hypotenuse_2)
+    )
+
+    const slope = Math.tan(
+      angleInDegreesToRadians(45) -
+        angleInDegreesToRadians(angle_1) / 2 +
+        angleInDegreesToRadians(angle_2) / 2
+    )
+    drawStraightLineFromPointAndSlope(
+      canvasLandscapePoints[1],
+      -slope,
+      canvas2DContext,
+      color
+    )
+  }
 }
