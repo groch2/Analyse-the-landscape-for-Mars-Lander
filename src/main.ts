@@ -307,11 +307,18 @@ function drawMiddleSlopeAtEachPairsOfSegmentJunctions(
   canvasLandscapePoints: Point[],
   canvas2DContext: CanvasRenderingContext2D
 ) {
-  drawMiddleLineOfAngleOf2Segments(
-    canvasLandscapePoints.slice(0, 3) as [Point, Point, Point],
-    canvas2DContext,
-    'green'
+  Array.from(
+    { length: canvasLandscapePoints.length - 2 },
+    (_, pointIndex) => pointIndex
   )
+    .map((pointIndex) => [pointIndex, pointIndex + 3])
+    .forEach(([start, end]) =>
+      drawMiddleLineOfAngleOf2Segments(
+        canvasLandscapePoints.slice(start, end) as [Point, Point, Point],
+        canvas2DContext,
+        'green'
+      )
+    )
 }
 
 function angleInRadiansToDregrees(angleInRadians: number) {
@@ -471,6 +478,39 @@ function drawMiddleLineOfAngleOf2Segments(
     drawStraightLineFromPointAndSlope(
       canvasLandscapePoints[1],
       -slope,
+      canvas2DContext,
+      color
+    )
+  } else {
+    const oppositeSide_1 =
+      canvasLandscapePoints[1].y - canvasLandscapePoints[2].y
+    const adjacentSide_1 =
+      canvasLandscapePoints[2].x - canvasLandscapePoints[1].x
+    const hypotenuse_1 = Math.sqrt(
+      Math.pow(oppositeSide_1, 2) + Math.pow(adjacentSide_1, 2)
+    )
+    const angle_1 = angleInRadiansToDregrees(
+      Math.asin(oppositeSide_1 / hypotenuse_1)
+    )
+
+    const oppositeSide_2 =
+      canvasLandscapePoints[1].y - canvasLandscapePoints[0].y
+    const adjacentSide_2 =
+      canvasLandscapePoints[1].x - canvasLandscapePoints[0].x
+    const hypotenuse_2 = Math.sqrt(
+      Math.pow(oppositeSide_2, 2) + Math.pow(adjacentSide_2, 2)
+    )
+    const angle_2 = angleInRadiansToDregrees(
+      Math.asin(oppositeSide_2 / hypotenuse_2)
+    )
+
+    const angleBetweenSegments = 180 - angle_1 - angle_2
+    const slop = Math.tan(
+      angleInDegreesToRadians(180 + angle_2 + angleBetweenSegments / 2)
+    )
+    drawStraightLineFromPointAndSlope(
+      canvasLandscapePoints[1],
+      slop,
       canvas2DContext,
       color
     )
