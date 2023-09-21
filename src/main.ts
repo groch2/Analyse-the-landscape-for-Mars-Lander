@@ -33,15 +33,7 @@ enum VerticalDirection {
 }
 
 const codingGameLandscape = { height: 3000, width: 7000 }
-const codingGameLandscapePoints = [
-  { x: 0, y: 100 },
-  { x: 1000, y: 500 },
-  { x: 1500, y: 1500 },
-  { x: 3000, y: 1000 },
-  { x: 4000, y: 150 },
-  { x: 5500, y: 150 },
-  { x: 6999, y: 800 },
-]
+import codingGameLandscapePoints from './points.json' assert { type: 'json' }
 
 const canvasLandscapePoints = codingGameLandscapePoints.map(({ x, y }) => {
   const canvas_x = convertLengthFromScaleToScale({
