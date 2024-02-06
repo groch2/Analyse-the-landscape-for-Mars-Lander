@@ -290,6 +290,25 @@ canvas.addEventListener('click', ({ offsetX, offsetY }) => {
   drawCompleteLandscape(canvasLandscapePoints, canvas2DContext)
 })
 
+canvas.addEventListener(
+  'mousemove',
+  throttle(({ offsetX, offsetY }) => {
+    console.debug({ mouseX: offsetX, mouseY: offsetY })
+  }, 300)
+)
+
+function throttle(callback: (args: any) => void, interval: number) {
+  let enableCall = true
+  return function (this: void, ...args: [args: any]) {
+    if (!enableCall) {
+      return
+    }
+    enableCall = false
+    callback.apply(this, args)
+    setTimeout(() => (enableCall = true), interval)
+  }
+}
+
 toggleConvexLandscapeVisibilityButton.addEventListener(
   'click',
   toggleConvexLandscapeVisibility
